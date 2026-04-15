@@ -1,0 +1,11 @@
+#!/bin/sh
+BASEDIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
+TOOLS_DIR="$BASEDIR/.tools"
+MAVEN_DIR="$TOOLS_DIR/apache-maven-3.9.9"
+MAVEN_CMD="$MAVEN_DIR/bin/mvn"
+
+if [ ! -x "$MAVEN_CMD" ]; then
+  powershell -ExecutionPolicy Bypass -File "$BASEDIR/tools/install-maven.ps1"
+fi
+
+exec "$MAVEN_CMD" "$@"
