@@ -1,17 +1,29 @@
 import { Link } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import AuthNavActions from './AuthNavActions';
 
 export default function Navbar() {
-  const { user } = useAuth();
-
   return (
-    <nav style={{ display: 'flex', gap: '1rem', padding: '1rem', borderBottom: '1px solid #ddd' }}>
-      <Link to="/resources">Resources</Link>
-      <Link to="/bookings">Bookings</Link>
-      <Link to="/tickets">Tickets</Link>
-      <Link to="/login">Auth</Link>
-      <div style={{ marginLeft: 'auto' }}>
-        <button type="button">{user ? 'Logout' : 'Login'}</button>
+    <nav className="app-nav">
+      <Link className="app-nav-logo" to="/">
+        <span className="app-nav-mark" aria-hidden="true">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <rect x="1.5" y="1.5" width="4" height="4" rx="1.2" fill="white" />
+            <rect x="8.5" y="1.5" width="4" height="4" rx="1.2" fill="white" opacity="0.75" />
+            <rect x="1.5" y="8.5" width="4" height="4" rx="1.2" fill="white" opacity="0.75" />
+            <rect x="8.5" y="8.5" width="4" height="4" rx="1.2" fill="white" opacity="0.5" />
+          </svg>
+        </span>
+        FMS
+      </Link>
+
+      <div className="app-nav-links" aria-label="Primary navigation">
+        <Link className="app-nav-link" to="/resources">Resources</Link>
+        <Link className="app-nav-link" to="/bookings">Bookings</Link>
+        <Link className="app-nav-link" to="/tickets">Tickets</Link>
+      </div>
+
+      <div className="app-nav-right">
+        <AuthNavActions />
       </div>
     </nav>
   );
