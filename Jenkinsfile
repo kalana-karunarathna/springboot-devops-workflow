@@ -5,6 +5,14 @@ pipeline {
         SONARQUBE_SERVER = 'SonarQube'
         BACKEND_DIR = 'backend'
         FRONTEND_DIR = 'frontend'
+
+        AWS_REGION = 'us-east-1'
+        AWS_ACCOUNT_ID = '016170083143'
+
+        ECR_BACKEND_REPO = '016170083143.dkr.ecr.us-east-1.amazonaws.com/fma-backend'
+        ECR_FRONTEND_REPO = '016170083143.dkr.ecr.us-east-1.amazonaws.com/fma-frontend'
+
+        IMAGE_TAG = "build-${BUILD_NUMBER}"
     }
 
     stages {
@@ -34,6 +42,9 @@ pipeline {
 
                     echo "Docker Compose:"
                     docker compose version
+
+                    echo "AWS CLI:"
+                    aws --version
                 '''
             }
         }
@@ -118,26 +129,77 @@ pipeline {
             }
         }
 
-        
-
         stage('Docker Compose Up') {
             steps {
                 sh 'docker compose up -d'
                 sh 'docker ps'
             }
         }
+
+        stage('Login to AWS ECR') {
+            steps {
+                withCredentials([
+                    string(credentialsId: 'aws-access-key-id', variable: 'AWS_ACCESS_KEY_ID'),
+                    string(credentialsId: 'aws-secret-access-key', variable: 'AWS_SECRET_ACCESS_KEY')
+                ]) {
+                    sh '''
+                        export AWS_DEFAULT_REGION=$AWS_REGION
+
+                        echo "Checking AWS identity..."
+                        aws sts get-caller-identity
+
+                        echo "Logging in to AWS ECR..."
+                        aws ecr get-login-password --region $AWS_REGION | \
+                        docker login --username AWS --password-stdin \
+                        $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
+                    '''
+                }
+            }
+        }
+
+        stage('Build and Push Backend Image to ECR') {
+            steps {
+                sh '''
+                    echo "Building backend Docker image..."
+                    docker build -t fma-backend:$IMAGE_TAG ./$BACKEND_DIR
+
+                    echo "Tagging backend image..."
+                    docker tag fma-backend:$IMAGE_TAG $ECR_BACKEND_REPO:$IMAGE_TAG
+
+                    echo "Pushing backend image to ECR..."
+                    docker push $ECR_BACKEND_REPO:$IMAGE_TAG
+                '''
+            }
+        }
+
+        stage('Build and Push Frontend Image to ECR') {
+            steps {
+                sh '''
+                    echo "Building frontend Docker image..."
+                    docker build -t fma-frontend:$IMAGE_TAG ./$FRONTEND_DIR
+
+                    echo "Tagging frontend image..."
+                    docker tag fma-frontend:$IMAGE_TAG $ECR_FRONTEND_REPO:$IMAGE_TAG
+
+                    echo "Pushing frontend image to ECR..."
+                    docker push $ECR_FRONTEND_REPO:$IMAGE_TAG
+                '''
+            }
+        }
     }
 
     post {
         success {
-            echo 'CI pipeline completed successfully.'
+            echo 'CI/CD pipeline completed successfully. Images pushed to AWS ECR.'
         }
 
         failure {
-            echo 'CI pipeline failed. Check the failed stage logs.'
+            echo 'Pipeline failed. Check the failed stage logs.'
         }
 
         always {
+            echo 'Stopping Docker Compose containers...'
+            sh 'docker compose down || true'
             echo 'Pipeline finished.'
         }
     }
