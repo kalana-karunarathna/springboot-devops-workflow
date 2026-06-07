@@ -17,7 +17,7 @@ spec:
         - name: ecr-secret
       containers:
         - name: backend
-          image: 016170083143.dkr.ecr.us-east-1.amazonaws.com/fma-backend:build-13
+          image: 016170083143.dkr.ecr.us-east-1.amazonaws.com/fma-backend:build-15
           imagePullPolicy: Always
           ports:
             - containerPort: 8080
