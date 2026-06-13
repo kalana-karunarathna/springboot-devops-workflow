@@ -1,0 +1,23 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: fma-app
+  namespace: argocd
+spec:
+  project: default
+
+  source:
+    repoURL: https://github.com/kalana-karunarathna/springboot-devops-workflow.git
+    targetRevision: feature/devops-workflow
+    path: k8s
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: fma
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

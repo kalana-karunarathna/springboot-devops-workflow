@@ -61,6 +61,29 @@ class BookingServiceTest {
 	}
 
 	@Test
+	void createBooking_shouldNormalizeRequesterEmailBeforeSaving() {
+		BookingCreateRequest request = createRequest();
+		request.setRequestedBy("  Student1@Example.COM  ");
+
+		when(bookingRepository.findConflictingBookings(anyString(), anyList(), any(), any())).thenReturn(List.of());
+		when(bookingRepository.save(any(Booking.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+		BookingResponse response = bookingService.createBooking(request);
+
+		assertEquals("student1@example.com", response.getRequestedBy());
+	}
+
+	@Test
+	void createBooking_shouldThrowWhenEndDateIsBeforeStartDate() {
+		BookingCreateRequest request = createRequest();
+		request.setEndDateTime(LocalDateTime.of(2026, 4, 18, 9, 0));
+
+		assertThrows(IllegalArgumentException.class, () -> bookingService.createBooking(request));
+		verify(bookingRepository, never()).findConflictingBookings(anyString(), anyList(), any(), any());
+		verify(bookingRepository, never()).save(any(Booking.class));
+	}
+
+	@Test
 	void createBooking_shouldThrowConflictWhenOverlapExists() {
 		BookingCreateRequest request = createRequest();
 
@@ -129,6 +152,19 @@ class BookingServiceTest {
 
 		assertThrows(InvalidBookingStateException.class, () -> bookingService.rejectBooking("b1", "No"));
 		verify(bookingRepository, never()).save(any(Booking.class));
+	}
+
+	@Test
+	void cancelBooking_shouldCancelApprovedBooking() {
+		Booking booking = pendingBooking();
+		booking.setStatus(BookingStatus.APPROVED);
+		when(bookingRepository.findById("b1")).thenReturn(Optional.of(booking));
+		when(bookingRepository.save(any(Booking.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+		BookingResponse response = bookingService.cancelBooking("b1");
+
+		assertEquals(BookingStatus.CANCELLED, response.getStatus());
+		verify(bookingRepository).save(booking);
 	}
 
 	private BookingCreateRequest createRequest() {

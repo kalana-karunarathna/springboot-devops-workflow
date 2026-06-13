@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backend-config
+  namespace: fma
+data:
+  SPRING_PROFILES_ACTIVE: "k8s"
+  SERVER_PORT: "8080"
+  SPRING_DATA_MONGODB_URI: "mongodb://mongo:27017/fma"
+  MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "health,info,prometheus"
+  MANAGEMENT_ENDPOINT_HEALTH_SHOW_DETAILS: "always"
+  MANAGEMENT_METRICS_TAGS_APPLICATION: "fma-backend"
