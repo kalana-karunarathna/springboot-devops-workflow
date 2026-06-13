@@ -8,7 +8,7 @@ spec:
 
   source:
     repoURL: https://github.com/kalana-karunarathna/springboot-devops-workflow.git
-    targetRevision: feature/devops-workflow
+    targetRevision: main
     path: k8s
 
   destination:
