@@ -395,15 +395,6 @@ release: monitoring
 
 If your Prometheus Helm release uses another label, update the ServiceMonitor labels to match it.
 
-## Team Module Ownership
-
-| Member | Folder | Responsibility |
-| --- | --- | --- |
-| Member 1 | `backend/src/main/java/com/fms/resources` and `frontend/src/pages/resources` | Resources module |
-| Member 2 | `backend/src/main/java/com/fms/bookings` and `frontend/src/pages/bookings` | Bookings module |
-| Member 3 | `backend/src/main/java/com/fms/tickets` and `frontend/src/pages/tickets` | Tickets module |
-| Member 4 | `backend/src/main/java/com/fms/auth`, `backend/src/main/java/com/fms/notifications`, `frontend/src/pages/auth`, and `frontend/src/pages/notifications` | Auth and notifications |
-
 Shared files such as `ApiResponse`, `CorsConfig`, `SecurityConfig`, `App.jsx`, `Navbar.jsx`, Docker files, Kubernetes files, and the Jenkins pipeline should be changed carefully and reviewed by the team.
 
 ## Git Workflow
@@ -416,15 +407,6 @@ Shared files such as `ApiResponse`, `CorsConfig`, `SecurityConfig`, `App.jsx`, `
 6. Open a pull request for review.
 7. Merge only after the team reviews the change.
 
-Suggested branch names:
-
-```text
-member1/resources
-member2/bookings
-member3/tickets
-member4/auth-notifications
-devops/jenkins-k8s
-```
 
 ## Conflict Prevention
 
