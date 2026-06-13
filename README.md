@@ -1,28 +1,102 @@
-# facility-management-system
+# Smart Campus Facility Management System
 
-Root scaffold for a Spring Boot + MongoDB + React (Vite) facility management platform. The repository is organized so four group members can clone the same project and work only inside their assigned module folders.
+A full-stack facility management platform built with Spring Boot, MongoDB, React, and Vite. The repository also contains a DevOps workflow for local containers, Jenkins CI/CD, Docker image publishing to AWS ECR, Kubernetes deployment, Argo CD GitOps sync, and Prometheus-compatible monitoring.
 
 ## Project Overview
 
-- `backend/` contains the Spring Boot API skeleton.
-- `frontend/` contains the React + Vite client skeleton.
-- Shared helpers are already in place for API responses, routing, CORS, auth context, and navigation.
-- No feature implementation is included yet, so each member can build on a clean module boundary.
+- `backend/` contains the Spring Boot API for resources, bookings, tickets, comments, authentication, and notifications.
+- `frontend/` contains the React + Vite client for the facility management dashboard.
+- `docker-compose.yml` runs MongoDB, the backend, and the frontend together for local container testing.
+- `Jenkinsfile` defines the CI/CD workflow for tests, builds, SonarQube analysis, Docker builds, and AWS ECR pushes.
+- `k8s/` contains Kubernetes manifests for MongoDB, backend, frontend, services, ingress, config, storage, and monitoring.
+- `argocd-app.yaml` defines the Argo CD application that continuously syncs the `k8s/` folder.
+- `kind-config.yaml` defines a local Kind cluster with useful NodePort mappings.
+
+## Technology Stack
+
+| Layer | Technology |
+| --- | --- |
+| Frontend | React 18, Vite, Axios, React Router, Vitest |
+| Backend | Java 17, Spring Boot 3.3, Spring Web, Spring Security, OAuth2 Client, Spring Data MongoDB |
+| Database | MongoDB 7 |
+| Build tools | Maven, npm |
+| Containers | Docker, Docker Compose, Nginx |
+| CI/CD | Jenkins, SonarQube, AWS CLI, AWS ECR |
+| Deployment | Kubernetes, Kind, Argo CD |
+| Monitoring | Spring Boot Actuator, Micrometer Prometheus, ServiceMonitor |
+
+## Repository Structure
+
+```text
+.
+|-- backend/                 # Spring Boot API
+|-- frontend/                # React + Vite client
+|-- k8s/                     # Kubernetes manifests
+|-- Jenkinsfile              # Jenkins CI/CD pipeline
+|-- docker-compose.yml       # Local container workflow
+|-- argocd-app.yaml          # Argo CD application definition
+|-- kind-config.yaml         # Local Kind cluster config
+`-- README.md
+```
 
 ## Prerequisites
 
-- Java 17
-- Node 18 or newer
-- MongoDB running locally
+Install these tools before running the project locally:
 
-## Run Backend
+- Java 17
+- Maven 3.9+ or the Maven wrapper in `backend/`
+- Node.js 18+ and npm
+- Docker and Docker Compose
+- MongoDB, if running the backend outside Docker
+- kubectl, Kind, and Argo CD CLI for Kubernetes/GitOps work
+- Jenkins, SonarQube, AWS CLI, and AWS credentials for the CI/CD workflow
+
+## Environment Variables
+
+Copy the example environment file and fill in local values when needed:
 
 ```bash
+cp .env.example .env
+```
+
+Common variables:
+
+| Variable | Purpose | Local default |
+| --- | --- | --- |
+| `SERVER_PORT` | Backend port | `8080` |
+| `MONGODB_URI` | MongoDB connection string | `mongodb://localhost:27017/smartcampus` |
+| `FRONTEND_URL` | Frontend URL used by backend redirects/CORS | `http://localhost:5173` |
+| `GOOGLE_CLIENT_ID` | Google OAuth client ID | `local-google-client-id` |
+| `GOOGLE_CLIENT_SECRET` | Google OAuth client secret | `local-google-client-secret` |
+| `VITE_API_BASE_URL` | Frontend API base URL | `http://localhost:8080/api` |
+
+Do not commit real `.env` values or credentials.
+
+## Run Locally
+
+Start MongoDB locally first, then run the backend and frontend in separate terminals.
+
+### Backend
+
+```bash
+cd backend
+./mvnw spring-boot:run
+```
+
+On Windows:
+
+```powershell
 cd backend
 .\mvnw.cmd spring-boot:run
 ```
 
-## Run Frontend
+Backend API runs at:
+
+```text
+http://localhost:8080
+```
+
+### Frontend
 
 ```bash
 cd frontend
@@ -30,114 +104,398 @@ npm install
 npm run dev
 ```
 
-## Module Ownership
+Frontend runs at:
+
+```text
+http://localhost:5173
+```
+
+## Run With Docker Compose
+
+Use Docker Compose when you want the full stack, including MongoDB, to run the same way on every machine.
+
+```bash
+docker compose up --build
+```
+
+Services:
+
+| Service | URL |
+| --- | --- |
+| Frontend | `http://localhost:3000` |
+| Backend | `http://localhost:8080` |
+| MongoDB | `mongodb://localhost:27017` |
+
+Stop the stack:
+
+```bash
+docker compose down
+```
+
+Remove local volumes as well:
+
+```bash
+docker compose down -v
+```
+
+## Tests And Builds
+
+Run backend tests:
+
+```bash
+cd backend
+mvn test
+```
+
+Run backend verification:
+
+```bash
+cd backend
+mvn verify
+```
+
+Run frontend tests:
+
+```bash
+cd frontend
+npm run test
+```
+
+Build frontend production files:
+
+```bash
+cd frontend
+npm run build
+```
+
+Build Docker images locally:
+
+```bash
+docker compose build
+```
+
+## API And App Routes
+
+Main frontend routes:
+
+| Route | Page |
+| --- | --- |
+| `/` | Home |
+| `/resources` | Resource catalogue |
+| `/admin` | Resource admin dashboard |
+| `/bookings` | Booking page |
+| `/bookings/admin` | Booking admin page |
+| `/tickets` | Ticket page |
+| `/tickets/create` | Create ticket |
+| `/tickets/admin` | Ticket admin |
+| `/tickets/technician` | Technician panel |
+| `/notifications` | Notifications |
+| `/login` | Login |
+
+Backend modules are organized under:
+
+- `com.fms.resources`
+- `com.fms.bookings`
+- `com.fms.tickets`
+- `com.fms.auth`
+- `com.fms.notifications`
+- `com.fms.common`
+- `com.fms.config`
+
+## DevOps Workflow
+
+This repository supports a complete development-to-deployment workflow:
+
+1. Developers push code to GitHub.
+2. Jenkins checks out the repository.
+3. Jenkins verifies tool versions for Java, Maven, Node, npm, Docker, Docker Compose, and AWS CLI.
+4. Backend unit tests run with `mvn test`.
+5. Backend integration/verification tests run with `mvn verify`.
+6. Frontend dependencies install with `npm ci` or `npm install`.
+7. Frontend tests run with `npm run test`.
+8. Frontend production build runs with `npm run build`.
+9. SonarQube scans the backend project.
+10. Jenkins waits for the SonarQube quality gate.
+11. Docker Compose builds and starts the local stack as a smoke test.
+12. Jenkins logs in to AWS ECR.
+13. Backend and frontend Docker images are built, tagged as `build-${BUILD_NUMBER}`, and pushed to ECR.
+14. Jenkins sends success or failure email notifications.
+15. Kubernetes manifests in `k8s/` deploy the app.
+16. Argo CD continuously syncs the Kubernetes state from Git.
+17. Prometheus can scrape backend metrics from `/actuator/prometheus`.
+
+## Jenkins CI/CD Pipeline
+
+The `Jenkinsfile` uses these important environment values:
+
+| Name | Purpose |
+| --- | --- |
+| `SONARQUBE_SERVER` | Jenkins SonarQube server name |
+| `BACKEND_DIR` | Backend folder path |
+| `FRONTEND_DIR` | Frontend folder path |
+| `AWS_REGION` | AWS region for ECR |
+| `AWS_ACCOUNT_ID` | AWS account ID |
+| `ECR_BACKEND_REPO` | Backend ECR repository URI |
+| `ECR_FRONTEND_REPO` | Frontend ECR repository URI |
+| `IMAGE_TAG` | Build-specific Docker image tag |
+| `MAIL_TO` | Pipeline notification email |
+
+Required Jenkins configuration:
+
+- Jenkins agent with Java 17, Maven, Node.js, npm, Docker, Docker Compose, and AWS CLI.
+- Jenkins SonarQube server named `SonarQube`.
+- Jenkins credentials:
+  - `aws-access-key-id`
+  - `aws-secret-access-key`
+- Jenkins Email Extension plugin configured for `emailext`.
+- Docker permission for the Jenkins user.
+
+Current ECR image repositories used by the pipeline:
+
+```text
+016170083143.dkr.ecr.us-east-1.amazonaws.com/fma-backend
+016170083143.dkr.ecr.us-east-1.amazonaws.com/fma-frontend
+```
+
+After Jenkins pushes new images, update the image tags in:
+
+- `k8s/backend-deployment.yaml`
+- `k8s/frontend-deployment.yaml`
+
+Then commit and push the manifest change so Argo CD can sync the new version.
+
+## Kubernetes Deployment
+
+The Kubernetes manifests deploy into the `fma` namespace.
+
+Main resources:
+
+| File | Purpose |
+| --- | --- |
+| `k8s/namespace.yaml` | Creates the `fma` namespace |
+| `k8s/mongo-pvc.yaml` | Persistent storage for MongoDB |
+| `k8s/mongo-deployment.yaml` | MongoDB deployment |
+| `k8s/mongo-service.yaml` | MongoDB service |
+| `k8s/backend-configmap.yaml` | Backend runtime configuration |
+| `k8s/backend-deployment.yaml` | Backend deployment from ECR |
+| `k8s/backend-service.yaml` | Backend ClusterIP service |
+| `k8s/frontend-deployment.yaml` | Frontend deployment from ECR |
+| `k8s/frontend-service.yaml` | Frontend NodePort service |
+| `k8s/fma-ingress.yaml` | Ingress routes for frontend and backend |
+| `k8s/backend-servicemonitor.yaml` | Prometheus Operator ServiceMonitor |
+
+Apply manifests manually:
+
+```bash
+kubectl apply -f k8s/
+```
+
+Check workloads:
+
+```bash
+kubectl get all -n fma
+```
+
+View backend logs:
+
+```bash
+kubectl logs -n fma deployment/backend
+```
+
+View frontend logs:
+
+```bash
+kubectl logs -n fma deployment/frontend
+```
+
+## Local Kubernetes With Kind
+
+Create the local cluster:
+
+```bash
+kind create cluster --config kind-config.yaml
+```
+
+Deploy the app:
+
+```bash
+kubectl apply -f k8s/
+```
+
+Open the frontend NodePort:
+
+```text
+http://localhost:30080
+```
+
+The Kind config also maps common local ports for Grafana, Prometheus, and Argo CD:
+
+| Tool | Local URL |
+| --- | --- |
+| Frontend | `http://localhost:30080` |
+| Grafana | `http://localhost:30180` |
+| Prometheus | `http://localhost:30190` |
+| Argo CD HTTPS | `https://localhost:8082` |
+
+## Argo CD GitOps
+
+The Argo CD application in `argocd-app.yaml` watches:
+
+```text
+https://github.com/kalana-karunarathna/springboot-devops-workflow.git
+```
+
+It syncs the `k8s/` folder from the `main` branch into the `fma` namespace.
+
+Apply the Argo CD application:
+
+```bash
+kubectl apply -f argocd-app.yaml
+```
+
+Check the app:
+
+```bash
+argocd app get fma-app
+```
+
+Sync manually if needed:
+
+```bash
+argocd app sync fma-app
+```
+
+Automated sync is enabled with prune and self-heal:
+
+- `prune: true` removes Kubernetes resources that were deleted from Git.
+- `selfHeal: true` reverts manual cluster drift back to the Git state.
+
+## Monitoring
+
+The backend exposes Spring Boot Actuator and Prometheus metrics.
+
+Useful endpoints:
+
+```text
+http://localhost:8080/actuator/health
+http://localhost:8080/actuator/prometheus
+```
+
+In Kubernetes, `k8s/backend-servicemonitor.yaml` allows Prometheus Operator to scrape:
+
+```text
+/actuator/prometheus
+```
+
+The ServiceMonitor expects a Prometheus Operator release label:
+
+```yaml
+release: monitoring
+```
+
+If your Prometheus Helm release uses another label, update the ServiceMonitor labels to match it.
+
+## Team Module Ownership
 
 | Member | Folder | Responsibility |
 | --- | --- | --- |
 | Member 1 | `backend/src/main/java/com/fms/resources` and `frontend/src/pages/resources` | Resources module |
 | Member 2 | `backend/src/main/java/com/fms/bookings` and `frontend/src/pages/bookings` | Bookings module |
 | Member 3 | `backend/src/main/java/com/fms/tickets` and `frontend/src/pages/tickets` | Tickets module |
-| Member 4 | `backend/src/main/java/com/fms/auth`, `backend/src/main/java/com/fms/notifications`, and `frontend/src/pages/auth` | Auth and notifications |
+| Member 4 | `backend/src/main/java/com/fms/auth`, `backend/src/main/java/com/fms/notifications`, `frontend/src/pages/auth`, and `frontend/src/pages/notifications` | Auth and notifications |
+
+Shared files such as `ApiResponse`, `CorsConfig`, `SecurityConfig`, `App.jsx`, `Navbar.jsx`, Docker files, Kubernetes files, and the Jenkins pipeline should be changed carefully and reviewed by the team.
 
 ## Git Workflow
 
-- Each member works only in their own assigned backend package and frontend folder.
-- Shared files such as `ApiResponse`, `CorsConfig`, `SecurityConfig`, `App.jsx`, and `Navbar.jsx` should be treated as common infrastructure.
-- Avoid creating controllers, services, repositories, or models outside your own module folder unless the team agrees on a shared utility.
-- Do not commit `.env`, `node_modules`, `target`, or `dist`.
+1. Create a branch from `main`.
+2. Keep feature work inside the matching backend package and frontend page folder when possible.
+3. Pull the latest `main` before opening a pull request.
+4. Run backend and frontend tests before pushing.
+5. Confirm `git status` does not include unrelated files.
+6. Open a pull request for review.
+7. Merge only after the team reviews the change.
 
-## GitHub Workflow
+Suggested branch names:
 
-1. One person creates the GitHub repository and pushes this starter scaffold.
-2. Everyone else clones the same repo from GitHub.
-3. Each member creates their own branch from `main`, for example:
-   - `member1/resources`
-   - `member2/bookings`
-   - `member3/tickets`
-   - `member4/auth`
-4. Each member only edits their own module folder unless the team has agreed on a shared file change.
-5. Before pushing, run `git status` and make sure you are not including files from another member's module.
-6. Pull the latest `main` before opening a pull request or merging.
-7. Merge only after the code is reviewed by the team.
+```text
+member1/resources
+member2/bookings
+member3/tickets
+member4/auth-notifications
+devops/jenkins-k8s
+```
 
 ## Conflict Prevention
 
-- Keep backend work inside the correct package:
-  - Member 1: `backend/src/main/java/com/fms/resources`
-  - Member 2: `backend/src/main/java/com/fms/bookings`
-  - Member 3: `backend/src/main/java/com/fms/tickets`
-  - Member 4: `backend/src/main/java/com/fms/auth` and `backend/src/main/java/com/fms/notifications`
-- Keep frontend work inside the matching page folders:
-  - Member 1: `frontend/src/pages/resources`
-  - Member 2: `frontend/src/pages/bookings`
-  - Member 3: `frontend/src/pages/tickets`
-  - Member 4: `frontend/src/pages/auth`
-- Shared files should be changed by only one person at a time.
-- If two members need the same shared file, coordinate first before editing.
-
-## Keep Same
-
-These files and rules should stay the same for everyone unless the whole team agrees to change them:
-
-- Root structure:
-  - `backend/`
-  - `frontend/`
-  - `.gitignore`
-  - `README.md`
-  - `.env` only for local secrets, not for Git commits
-- Backend shared files:
-  - `backend/pom.xml`
-  - `backend/src/main/java/com/fms/FmsApplication.java`
-  - `backend/src/main/java/com/fms/config/CorsConfig.java`
-  - `backend/src/main/java/com/fms/config/SecurityConfig.java`
-  - `backend/src/main/java/com/fms/common/ApiResponse.java`
-  - `backend/src/main/resources/application.properties`
-- Frontend shared files:
-  - `frontend/package.json`
-  - `frontend/vite.config.js`
-  - `frontend/src/App.jsx`
-  - `frontend/src/main.jsx`
-  - `frontend/src/api/axios.js`
-  - `frontend/src/context/AuthContext.jsx`
-  - `frontend/src/components/Navbar.jsx`
-  - `frontend/src/pages/Home.jsx`
-  - `frontend/src/pages/Home.css`
-- Routing and API rules:
-  - Backend stays under `com.fms.*`
-  - Frontend API base stays `http://localhost:8080/api`
-  - Frontend proxy stays pointed to `http://localhost:8080`
-  - The temporary security setup stays `permitAll` until Member 4 replaces it
-
-## Do Not Change Alone
-
 - Do not rename shared backend packages unless the whole team agrees.
 - Do not change the MongoDB database name without informing everyone.
-- Do not remove the `ApiResponse` wrapper or make custom response formats in separate modules.
-- Do not move shared frontend routing files unless the whole group updates imports together.
-- Do not edit `.env` and commit it to GitHub.
+- Do not remove the shared `ApiResponse` format unless all modules are updated.
+- Do not move shared frontend routing files unless imports are updated together.
+- Do not commit `.env`, `node_modules`, `target`, `dist`, or local IDE files.
 - Do not overwrite another member's folder when merging.
+- Coordinate before changing `Jenkinsfile`, `docker-compose.yml`, `argocd-app.yaml`, or files in `k8s/`.
 
-## MongoDB
+## Troubleshooting
 
-- Local backend database name: `facility_management_db`
-- The root `.env` file also includes the provided Atlas connection string for `smartcampus`
+If the frontend cannot reach the backend:
 
-### MongoDB Compass
+- Check `VITE_API_BASE_URL`.
+- Confirm the backend is running on port `8080`.
+- Confirm CORS allows the frontend origin.
 
-1. Open MongoDB Compass.
-2. Paste the connection string you want to use:
-   - Local: `mongodb://localhost:27017/facility_management_db`
-   - Atlas: use the `MONGODB_URI` value from `.env`
-3. Connect and verify the database name:
-   - Local database: `facility_management_db`
-   - Atlas database: `smartcampus`
+If Docker Compose backend cannot reach MongoDB:
 
-## Notes
+- Confirm the `mongo` service is healthy.
+- Check `MONGODB_URI=mongodb://mongo:27017/smartcampus` inside Compose.
 
-- Backend security is temporarily open for development.
-- Member 4 will later replace the temporary security setup with OAuth2 and role-based access.
-- The backend uses a local Maven wrapper-style setup in `backend/.mvn`, `backend/mvnw`, and `backend/mvnw.cmd`.
+If Kubernetes pods cannot pull ECR images:
 
-Webhook trigger test - Wed Jun  3 14:15:10 +0530 2026
+- Confirm the image tag exists in ECR.
+- Confirm the `ecr-secret` image pull secret exists in the `fma` namespace.
+- Confirm the deployment image URI and AWS region are correct.
 
-Webhook trigger test - Wed Jun  3 14:58:17 +0530 2026
+If Argo CD does not update the app:
+
+- Confirm `argocd-app.yaml` points to the correct repository and branch.
+- Confirm the image tag change was committed to Git.
+- Check `argocd app get fma-app`.
+
+If Prometheus does not scrape metrics:
+
+- Confirm `/actuator/prometheus` works from the backend service.
+- Confirm the ServiceMonitor label matches the Prometheus Operator release.
+- Confirm the backend service port is named `http`.
+
+## Useful Commands
+
+```bash
+# Backend
+cd backend && mvn test
+cd backend && mvn verify
+cd backend && ./mvnw spring-boot:run
+
+# Frontend
+cd frontend && npm install
+cd frontend && npm run test
+cd frontend && npm run build
+cd frontend && npm run dev
+
+# Docker
+docker compose build
+docker compose up -d
+docker compose ps
+docker compose logs -f backend
+docker compose down
+
+# Kubernetes
+kubectl apply -f k8s/
+kubectl get pods -n fma
+kubectl get svc -n fma
+kubectl logs -n fma deployment/backend
+
+# Argo CD
+kubectl apply -f argocd-app.yaml
+argocd app get fma-app
+argocd app sync fma-app
+```
