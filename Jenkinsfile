@@ -13,6 +13,8 @@ pipeline {
         ECR_FRONTEND_REPO = '016170083143.dkr.ecr.us-east-1.amazonaws.com/fma-frontend'
 
         IMAGE_TAG = "build-${BUILD_NUMBER}"
+
+        MAIL_TO = 'dasunkarunarathna07@gmail.com'
     }
 
     stages {
@@ -191,10 +193,53 @@ pipeline {
     post {
         success {
             echo 'CI/CD pipeline completed successfully. Images pushed to AWS ECR.'
+
+            emailext(
+                subject: "SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                body: """
+                    <h2>CI/CD Pipeline Completed Successfully</h2>
+
+                    <p><b>Job:</b> ${env.JOB_NAME}</p>
+                    <p><b>Build Number:</b> ${env.BUILD_NUMBER}</p>
+                    <p><b>Status:</b> SUCCESS</p>
+                    <p><b>Image Tag:</b> ${env.IMAGE_TAG}</p>
+
+                    <p><b>Backend ECR Image:</b><br>
+                    ${env.ECR_BACKEND_REPO}:${env.IMAGE_TAG}</p>
+
+                    <p><b>Frontend ECR Image:</b><br>
+                    ${env.ECR_FRONTEND_REPO}:${env.IMAGE_TAG}</p>
+
+                    <p><b>Build URL:</b><br>
+                    <a href="${env.BUILD_URL}">${env.BUILD_URL}</a></p>
+
+                    <p>Docker images were built and pushed to AWS ECR successfully.</p>
+                """,
+                mimeType: 'text/html',
+                to: "${env.MAIL_TO}"
+            )
         }
 
         failure {
             echo 'Pipeline failed. Check the failed stage logs.'
+
+            emailext(
+                subject: "FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                body: """
+                    <h2>CI/CD Pipeline Failed</h2>
+
+                    <p><b>Job:</b> ${env.JOB_NAME}</p>
+                    <p><b>Build Number:</b> ${env.BUILD_NUMBER}</p>
+                    <p><b>Status:</b> FAILED</p>
+
+                    <p><b>Build URL:</b><br>
+                    <a href="${env.BUILD_URL}">${env.BUILD_URL}</a></p>
+
+                    <p>Please check the Jenkins console output to identify the failed stage.</p>
+                """,
+                mimeType: 'text/html',
+                to: "${env.MAIL_TO}"
+            )
         }
 
         always {
@@ -204,3 +249,4 @@ pipeline {
         }
     }
 }
+
